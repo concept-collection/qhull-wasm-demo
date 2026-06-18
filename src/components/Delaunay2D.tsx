@@ -9,6 +9,8 @@ import { points2D, type Dist2D } from '../points'
 const SIZE = 520
 const PAD = 24
 
+interface Result { pts: number[][]; tris: number[][]; hull: number[][] }
+
 export function Delaunay2D() {
   const [dist, setDist] = useState<Dist2D>('uniform')
   const [n, setN] = useState(60)
@@ -23,20 +25,20 @@ export function Delaunay2D() {
     [n, dist, seed, extra],
   )
 
-  const [tris, setTris] = useState<number[][]>([])
-  const [hull, setHull] = useState<number[][]>([])
+  // The triangulation/hull are stored together with the exact points they were
+  // computed from, so facet indices can never reference a stale (out-of-range)
+  // point set while qhull is recomputing.
+  const [result, setResult] = useState<Result>({ pts: [], tris: [], hull: [] })
 
   useEffect(() => {
     let cancelled = false
     getQhull().then((q) => {
-      if (cancelled || pts.length < 3) {
-        setTris([]); setHull([]); return
-      }
+      if (cancelled) return
+      if (pts.length < 3) { setResult({ pts, tris: [], hull: [] }); return }
       try {
-        setTris(q.delaunay(pts, 2).facets)
-        setHull(q.convexHull(pts, 2).facets)
+        setResult({ pts, tris: q.delaunay(pts, 2).facets, hull: q.convexHull(pts, 2).facets })
       } catch {
-        setTris([]); setHull([])
+        setResult({ pts, tris: [], hull: [] })
       }
     })
     return () => { cancelled = true }
@@ -60,9 +62,10 @@ export function Delaunay2D() {
     setExtra((cur) => [...cur, [x, y]])
   }
 
+  const { pts: rpts, tris, hull } = result
   const circles = useMemo(
-    () => (showCircles ? tris.map((t) => circumcircle(pts[t[0]], pts[t[1]], pts[t[2]])) : []),
-    [showCircles, tris, pts],
+    () => (showCircles ? tris.map((t) => circumcircle(rpts[t[0]], rpts[t[1]], rpts[t[2]])) : []),
+    [showCircles, tris, rpts],
   )
 
   return (
@@ -105,15 +108,15 @@ export function Delaunay2D() {
               r={c.r * (SIZE - 2 * PAD)} fill="none" stroke="#26a69a" strokeWidth={0.5} opacity={0.4} />
           ))}
           {showTri && tris.map((t, i) => {
-            const a = toScreen(pts[t[0]]), b = toScreen(pts[t[1]]), c = toScreen(pts[t[2]])
+            const a = toScreen(rpts[t[0]]), b = toScreen(rpts[t[1]]), c = toScreen(rpts[t[2]])
             return <polygon key={`t${i}`} points={`${a[0]},${a[1]} ${b[0]},${b[1]} ${c[0]},${c[1]}`}
               fill="#1976d2" fillOpacity={0.07} stroke="#1976d2" strokeWidth={0.8} />
           })}
           {showHull && hull.map((e, i) => {
-            const a = toScreen(pts[e[0]]), b = toScreen(pts[e[1]])
+            const a = toScreen(rpts[e[0]]), b = toScreen(rpts[e[1]])
             return <line key={`h${i}`} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#f57c00" strokeWidth={2.2} />
           })}
-          {pts.map((p, i) => {
+          {rpts.map((p, i) => {
             const s = toScreen(p)
             return <circle key={`p${i}`} cx={s[0]} cy={s[1]} r={2.4} fill="#222" />
           })}
@@ -121,7 +124,7 @@ export function Delaunay2D() {
       </Box>
 
       <Typography variant="body2" color="text.secondary">
-        {pts.length} points → {tris.length} triangles, {hull.length} hull edges.
+        {rpts.length} points → {tris.length} triangles, {hull.length} hull edges.
       </Typography>
     </Stack>
   )

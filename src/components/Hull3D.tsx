@@ -17,13 +17,15 @@ export function Hull3D() {
   const [spin, setSpin] = useState(true)
 
   const pts = useMemo(() => points3D(n, dist, seed), [n, dist, seed])
-  const [hull, setHull] = useState<number[][]>([])
+  // Hull facets are kept together with the points they were computed from, so
+  // facet indices never reference a stale point set while qhull recomputes.
+  const [data, setData] = useState<{ pts: number[][]; hull: number[][] }>({ pts: [], hull: [] })
 
   useEffect(() => {
     let cancelled = false
     getQhull().then((q) => {
       if (cancelled) return
-      try { setHull(q.convexHull(pts, 3).facets) } catch { setHull([]) }
+      try { setData({ pts, hull: q.convexHull(pts, 3).facets }) } catch { setData({ pts, hull: [] }) }
     })
     return () => { cancelled = true }
   }, [pts])
@@ -107,6 +109,7 @@ export function Hull3D() {
     })
     group.clear()
 
+    const { pts, hull } = data
     // center & scale points to fit a unit-ish box
     const flat = pts.flat()
     const c = [0, 1, 2].map((k) => mean(pts.map((p) => p[k])))
@@ -143,7 +146,7 @@ export function Hull3D() {
         pts.flatMap((p) => { const v = xf(p); return [v.x, v.y, v.z] }), 3))
       group.add(new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xffd54f, size: 0.04 })))
     }
-  }, [pts, hull, showPoints, wireframe])
+  }, [data, showPoints, wireframe])
 
   return (
     <Stack spacing={2}>
@@ -170,7 +173,7 @@ export function Hull3D() {
       </Stack>
       <Box ref={mountRef} sx={{ width: '100%', borderRadius: 1, overflow: 'hidden', lineHeight: 0 }} />
       <Typography variant="body2" color="text.secondary">
-        {pts.length} points → hull with {hull.length} triangular facets.
+        {pts.length} points → hull with {data.hull.length} triangular facets.
       </Typography>
     </Stack>
   )
