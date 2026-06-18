@@ -32,8 +32,8 @@ function App() {
           is <Link href="http://www.qhull.org" target="_blank" rel="noreferrer">Qhull</Link> (the reentrant
           {' '}<code>libqhull_r</code>) compiled to WebAssembly, with a small JS API for convex hulls and
           Delaunay triangulations — the same engine MATLAB and Octave use, now running in the browser.
-          It was built for <Link href="https://numbl.org" target="_blank" rel="noreferrer">numbl</Link>{' '}
-          (MATLAB in the browser), which uses it to power <code>delaunayn</code> and <code>convhulln</code>.
+          It was built for <Link href="https://numbl.org" target="_blank" rel="noreferrer">numbl</Link>,
+          which uses it to power <code>delaunayn</code> and <code>convhulln</code>.
         </Typography>
 
         <Paper variant="outlined" sx={{ mb: 2 }}>
