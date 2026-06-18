@@ -33,7 +33,8 @@ function App() {
           {' '}<code>libqhull_r</code>) compiled to WebAssembly, with a small JS API for convex hulls and
           Delaunay triangulations — the same engine MATLAB and Octave use, now running in the browser.
           It was built for <Link href="https://numbl.org" target="_blank" rel="noreferrer">numbl</Link>,
-          which uses it to power <code>delaunayn</code> and <code>convhulln</code>.
+          which uses it to power <code>delaunay</code>, <code>delaunayn</code>, <code>convhull</code>,
+          and <code>convhulln</code>.
         </Typography>
 
         <Paper variant="outlined" sx={{ mb: 2 }}>
